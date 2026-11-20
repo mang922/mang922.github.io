@@ -190,6 +190,8 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .hcover img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.7)}
 .hcover i{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/30px no-repeat;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .reel.paused .hcover{opacity:1}
+.reel.local .hcover{background:rgba(0,0,0,.28)}
+.reel.local .hcover img{display:none}
 .reel:focus-visible{outline:3px solid var(--btn);outline-offset:4px}
 .lb-yt{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#2997ff}
 .lb-yt:hover{text-decoration:underline}
@@ -301,7 +303,7 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 /* ============ 여기만 수정하세요 ============
    REEL.src: 쇼릴 mp4 파일 경로(히어로 카드에 무음 반복 재생, 버튼을 누르면 소리와 함께 재생). 비워두면 움직이는 그라데이션이 나옵니다.
    REEL.yt: 유튜브 영상 ID(주소 끝 11글자). 실제 도메인에서는 히어로 카드에 자동재생되고, 작업 카드의 썸네일과 제목도 유튜브 것이 자동으로 붙습니다. WORKS의 yt도 같습니다. v:true 는 세로형(9:16), h는 색상(0-360) */
-const REEL = { yt:'-XVtSKdpXlk', src:'', v:true, title:'제안 영상', sub:'SNS 숏폼', role:['기획','편집','AI'] }; /* v:true 세로형(쇼츠) 영상이면 히어로 카드도 세로로 표시 */
+const REEL = { yt:'-XVtSKdpXlk', src:'medicube.mp4', v:true, title:'제안 영상', sub:'SNS 숏폼', role:['기획','편집','AI'] }; /* v:true 세로형(쇼츠) 영상이면 히어로 카드도 세로로 표시 */
 /* cat: 작업 탭 분류(브랜드·광고, 유튜브·인터뷰, 뷰티, SNS 중 하나). 작업이 하나도 없는 탭은 자동으로 숨겨집니다.
    d: 영상 팝업에 나오는 설명. v:true 는 세로형(쇼츠) 영상: 카드도 9:16 세로로 표시되고, 팝업에서도 세로 화면으로 재생 */
 const WORKS = [
@@ -576,6 +578,7 @@ function openReel(src){lastFocus=src;renderLb('reel');lb.classList.add('on');HA.
 function toggleHero(){
   if(!HA.f)return;
   const r=$('#reel');
+  if(HA.local){const v=HA.v;if(v.paused){HA.hpaused=false;v.play().catch(()=>{});r.classList.remove('paused')}else{HA.hpaused=true;v.pause();r.classList.add('paused')}HA.apply();return}
   if(!HA.hpaused){HA.hpaused=true;HA.pt=HA.t||0;r.classList.add('paused')}
   else{HA.hpaused=false;HA.cmd('seekTo',[HA.pt||0,true]);r.classList.remove('paused')}
   HA.apply();
@@ -597,9 +600,18 @@ $('#reel-t').textContent=REEL.title||'Showreel';$('#reel-s').textContent=REEL.su
 if(REEL.role&&REEL.role.length)$('#reel-r').outerHTML=rolesHTML(REEL);
 
 /* hero video */
+/* src(mp4)가 있으면 유튜브 대신 사이트가 직접 재생: 유튜브 UI 없이 반복 재생 */
 (function(){
   const v=$('#bgv');if(!REEL.src)return;
-  v.src=REEL.src;v.hidden=false;$('.mesh').hidden=true;
+  const r=$('#reel');
+  v.addEventListener('error',()=>{v.hidden=true;$('.mesh').hidden=false;$('#hvol').hidden=true;HA.f=null;HA.local=false;r.classList.remove('local')},{once:true});
+  v.src=REEL.src;v.hidden=false;$('.mesh').hidden=true;v.loop=true;v.muted=true;
+  HA.local=true;HA.v=v;HA.f={contentWindow:null};r.classList.add('local');$('#hvol').hidden=false;
+  HA.cmd=function(fn,a){
+    if(fn==='setVolume')v.volume=Math.max(0,Math.min(1,a[0]/100));
+    else if(fn==='unMute'){v.muted=false;if(!this.hpaused)v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
+    else if(fn==='mute')v.muted=true;
+  };
   if(!reduce)v.play().catch(()=>{});
 })();
 
