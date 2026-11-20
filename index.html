@@ -1,3 +1,11 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
 <title>2026포트폴리오</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap">
@@ -94,6 +102,12 @@ h2{font-size:clamp(34px,5.6vw,64px);line-height:1.06;font-weight:700;letter-spac
 .tile.tall .go{right:10px;top:10px}
 .stage.v{width:auto;height:min(82svh,960px)}
 .tile.out,.tile.cut{display:none}
+[hidden]{display:none!important}
+.hvol{position:absolute;top:14px;right:14px;z-index:3;display:flex;align-items:center;gap:6px;padding:5px 12px 5px 5px;border-radius:999px;background:rgba(0,0,0,.42);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);color:#fff}
+.hvol button{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff}
+.hvol input{width:84px;accent-color:#fff;cursor:pointer}
+#hvol-b .v-off,#hvol-b.off .v-on{display:none}
+#hvol-b.off .v-off{display:block}
 .more-btn{display:flex;align-items:center;justify-content:center;margin:32px auto 0;width:60px;height:60px;border-radius:50%;background:var(--card);color:var(--fg);font-size:26px;font-weight:700;line-height:1;letter-spacing:1px;transition:transform .25s,background .25s}
 .more-btn svg{display:block}
 .ypv{position:absolute;left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%) scale(1.2);border:0;z-index:-2;opacity:0;transition:opacity .5s ease;pointer-events:none;background:#000}
@@ -219,6 +233,7 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
         <video id="bgv" muted loop playsinline preload="auto" aria-hidden="true" hidden></video>
         <div class="reel-ui"><b id="reel-t">제안 영상</b><span id="reel-s">SNS 숏폼</span><div id="reel-r"></div></div>
         <button class="playbtn" data-reel aria-label="쇼릴 재생"><i>▶</i>재생</button>
+        <div class="hvol" id="hvol" hidden><button id="hvol-b" class="off" aria-label="소리 켜기 또는 끄기"><svg class="v-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg><svg class="v-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg></button><input id="hvol-r" type="range" min="0" max="100" value="70" aria-label="볼륨"></div>
       </div>
     </div>
   </div>
@@ -294,6 +309,8 @@ const WORKS = [
   {t:'브랜드·광고 영상 09',cat:'브랜드·광고',h:185,yt:'7KDwzBd3hgg',role:['편집'],d:''},
   {t:'브랜드·광고 영상 10',cat:'브랜드·광고',h:310,yt:'-QKtxQGZc98',v:true,role:['편집'],d:''},
   {t:'브랜드·광고 영상 11',cat:'브랜드·광고',h:30,yt:'MkWekpdxAeI',role:['편집'],d:''},
+  {t:'브랜드·광고 영상 12',cat:'브랜드·광고',h:205,yt:'DNHiRRtZSWo',role:['편집'],d:''},
+  {t:'브랜드·광고 영상 13',cat:'브랜드·광고',h:260,yt:'Ry361vcPu4w',role:['편집'],d:''},
   {t:'뷰티 영상 01',cat:'뷰티',h:330,yt:'xBjxVpW-Gmg',role:['촬영','편집'],d:''},
   {t:'뷰티 영상 02',cat:'뷰티',h:345,yt:'c4YiUIqkW6I',role:['촬영','편집'],d:''},
   {t:'뷰티 영상 03',cat:'뷰티',h:15,yt:'kfg8aJs6ihU',role:['기획','편집'],d:''},
@@ -301,6 +318,8 @@ const WORKS = [
   {t:'유튜브·인터뷰 영상 02',cat:'유튜브·인터뷰',h:250,yt:'RYCq7AnCLks',role:['촬영','편집'],d:''},
   {t:'유튜브·인터뷰 영상 03',cat:'유튜브·인터뷰',h:275,yt:'M4ye8jsc-bU',role:['편집'],d:''},
   {t:'유튜브·인터뷰 영상 04',cat:'유튜브·인터뷰',h:200,yt:'8pxM-zEZSYA',role:['편집'],d:''},
+  {t:'유튜브·인터뷰 영상 05',cat:'유튜브·인터뷰',h:228,yt:'M3UH2LyhHFg',role:['편집'],d:''},
+  {t:'유튜브·인터뷰 영상 06',cat:'유튜브·인터뷰',h:190,yt:'lnG4rySnar0',role:['편집'],d:''},
   {t:'SNS 영상 01',cat:'SNS',h:290,yt:'vIcsaJHgpq4',v:true,role:['편집'],d:''},
   {t:'SNS 영상 02',cat:'SNS',h:320,yt:'KiY6H-xvM-M',v:true,role:['편집'],d:''},
   {t:'SNS 영상 03',cat:'SNS',h:355,yt:'qAe6caS-Rl4',v:true,role:['편집'],d:''},
@@ -444,12 +463,27 @@ function ytFrame(id){
   f.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;z-index:3';
   return f;
 }
+/* 히어로(제안 영상) 소리: 브라우저 정책상 처음엔 무음으로 시작하고,
+   방문자가 페이지를 처음 클릭·터치·키 입력하는 순간 소리를 켭니다. 팝업이 열리거나 화면 밖으로 나가면 잠시 꺼집니다. */
+const HA={f:null,vol:70,userMuted:false,unlocked:false,ducked:false,inView:true,
+  cmd(fn,args){if(!this.f)return;try{this.f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args||[]}),'*')}catch(e){}},
+  audible(){return this.unlocked&&!this.userMuted&&this.vol>0},
+  apply(){const on=this.audible()&&!this.ducked&&this.inView;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
+};
+['pointerdown','keydown','touchend'].forEach(t=>document.addEventListener(t,e=>{
+  if(HA.unlocked||!HA.f||(e.target.closest&&e.target.closest('.hvol')))return;
+  HA.unlocked=true;HA.apply();
+},true));
+$('#hvol-b').addEventListener('click',()=>{const was=HA.audible();HA.unlocked=true;HA.userMuted=was;if(!was&&HA.vol===0){HA.vol=50;$('#hvol-r').value=50}HA.apply()});
+$('#hvol-r').addEventListener('input',e=>{HA.vol=+e.target.value;HA.unlocked=true;HA.userMuted=HA.vol===0;HA.apply()});
+new IntersectionObserver(es=>{HA.inView=es[0].isIntersecting;HA.apply()},{threshold:0}).observe($('#reel'));
 function heroEmbed(host,before){
   const d=document.createElement('div');d.className='yt-bg';d.setAttribute('aria-hidden','true');
   const f=document.createElement('iframe');
   f.src='https://www.youtube-nocookie.com/embed/'+REEL.yt+'?autoplay=1&mute=1&loop=1&playlist='+REEL.yt+'&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3&cc_load_policy=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
   ytQuiet(f);
   f.allow='autoplay; encrypted-media';f.tabIndex=-1;f.title='showreel';d.appendChild(f);before.before(d);
+  HA.f=f;$('#hvol').hidden=false;
   const fit=()=>{const s=Math.max(host.clientWidth/16,host.clientHeight/9);f.style.width=s*16+'px';f.style.height=s*9+'px'};
   fit();addEventListener('resize',fit);
 }
@@ -489,7 +523,7 @@ ytProbe().then(ok=>{
 });
 
 /* lightbox */
-function openLb(i){lastFocus=document.activeElement;cur=Math.max(visible.indexOf(i),0);renderLb(i);lb.classList.add('on');document.body.style.overflow='hidden';$('#lb-x').focus()}
+function openLb(i){lastFocus=document.activeElement;cur=Math.max(visible.indexOf(i),0);renderLb(i);lb.classList.add('on');HA.ducked=true;HA.apply();document.body.style.overflow='hidden';$('#lb-x').focus()}
 function renderLb(i){
   const reel=i==='reel',w=reel?{t:REEL.title||'Showreel',cat:REEL.sub||'',h:200,yt:REEL.yt,v:!!REEL.v,role:REEL.role}:WORKS[i];
   stage.style.setProperty('--ar',w.v?'9/16':'16/9');stage.classList.toggle('v',!!w.v);stage.innerHTML='';
@@ -508,12 +542,12 @@ function renderLb(i){
   const ya=$('#lb-yt');ya.hidden=!w.yt;if(w.yt)ya.href='https://www.youtube.com/watch?v='+w.yt;
 }
 function step(d){if(!visible.length)return;cur=(cur+d+visible.length)%visible.length;renderLb(visible[cur])}
-function closeLb(){lb.classList.remove('on');ySh=null;if(document.fullscreenElement)try{document.exitFullscreen()}catch(e){};stage.innerHTML='';document.body.style.overflow='';lastFocus&&lastFocus.focus()}
+function closeLb(){lb.classList.remove('on');HA.ducked=false;HA.apply();ySh=null;if(document.fullscreenElement)try{document.exitFullscreen()}catch(e){};stage.innerHTML='';document.body.style.overflow='';lastFocus&&lastFocus.focus()}
 $('#lb-x').onclick=closeLb;$('#lb-prev').onclick=()=>step(-1);$('#lb-next').onclick=()=>step(1);
 /* 영상 화면과 버튼·링크 바깥을 누르면 닫기 */
 lb.addEventListener('click',e=>{if(!e.target.closest('.stage, button, a'))closeLb()});
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1)});
-$$('[data-reel]').forEach(b=>b.addEventListener('click',e=>{lastFocus=e.currentTarget;renderLb('reel');lb.classList.add('on');document.body.style.overflow='hidden';$('#lb-x').focus()}));
+$$('[data-reel]').forEach(b=>b.addEventListener('click',e=>{lastFocus=e.currentTarget;renderLb('reel');lb.classList.add('on');HA.ducked=true;HA.apply();document.body.style.overflow='hidden';$('#lb-x').focus()}));
 
 /* copy */
 $$('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{
@@ -569,3 +603,6 @@ if(REEL.role&&REEL.role.length)$('#reel-r').outerHTML=rolesHTML(REEL);
   });
 })();
 </script>
+
+</body>
+</html>
