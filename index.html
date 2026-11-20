@@ -186,6 +186,10 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .yt-bg iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:0;pointer-events:none;opacity:0;transition:opacity .6s ease}
 .yt-bg.on iframe{opacity:1}
 .reel{cursor:pointer}
+.hcover{position:absolute;inset:0;z-index:0;opacity:0;pointer-events:none;transition:opacity .25s ease;background:#05070a}
+.hcover img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.7)}
+.hcover i{position:absolute;left:50%;top:50%;width:72px;height:72px;margin:-36px 0 0 -36px;border-radius:50%;background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/30px no-repeat;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.reel.paused .hcover{opacity:1}
 .reel:focus-visible{outline:3px solid var(--btn);outline-offset:4px}
 .lb-yt{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#2997ff}
 .lb-yt:hover{text-decoration:underline}
@@ -231,7 +235,8 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
     <h1>콘텐츠로<br><span class="grad">브랜드의 가치</span>를 전달합니다.</h1>
     <p>브랜드의 방향을 이해하고, 아이디어를 콘텐츠로,<br class="br"> 콘텐츠를 매력적인 브랜드 경험으로 만듭니다.</p>
     <div class="reel-wrap">
-      <div class="reel" id="reel" role="button" tabindex="0" aria-label="제안 영상 크게 보기">
+      <div class="reel" id="reel" role="button" tabindex="0" aria-label="제안 영상 재생 또는 일시정지">
+        <div class="hcover" id="hcover" aria-hidden="true"><img alt=""><i></i></div>
         <div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
         <video id="bgv" muted loop playsinline preload="auto" aria-hidden="true" hidden></video>
         <div class="reel-ui"><b id="reel-t">제안 영상</b><span id="reel-s">SNS 숏폼</span><div id="reel-r"></div></div>
@@ -470,7 +475,7 @@ function ytFrame(id){
 const HA={f:null,vol:70,userMuted:false,unlocked:false,ducked:false,inView:true,
   cmd(fn,args){if(!this.f)return;try{this.f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args||[]}),'*')}catch(e){}},
   audible(){return this.unlocked&&!this.userMuted&&this.vol>0},
-  apply(){const on=this.audible()&&!this.ducked&&this.inView;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
+  apply(){const on=this.audible()&&!this.ducked&&this.inView&&!this.hpaused;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
 };
 /* 반복 재생: 영상을 다시 불러오지 않고 끝나기 직전에 처음으로 되감아, 깜빡임과 유튜브 UI가 다시 뜨지 않게 함 */
 addEventListener('message',e=>{
@@ -478,11 +483,13 @@ addEventListener('message',e=>{
   let d;try{d=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(err){return}
   const i=d&&d.info;if(!i)return;
   if(typeof i.duration==='number'&&i.duration>0)HA.dur=i.duration;
+  if(typeof i.currentTime==='number')HA.t=i.currentTime;
   if(typeof i.currentTime==='number'&&HA.dur>1&&i.currentTime>=HA.dur-0.6&&!HA.seeking){
     HA.seeking=true;HA.cmd('seekTo',[0,true]);setTimeout(()=>HA.seeking=false,1200);
   }
   if(i.playerState===0){HA.cmd('seekTo',[0,true]);HA.cmd('playVideo')}
-  if(i.playerState===1&&!HA.shown){HA.shown=true;setTimeout(()=>{const b=$('.yt-bg');if(b)b.classList.add('on')},700)}
+  /* 처음 재생 직후 몇 초간 뜨는 유튜브 제목이 사라질 때까지 숨겨 두었다가, 처음으로 되감고 보여줌 */
+  if(i.playerState===1&&!HA.shown){HA.shown=true;setTimeout(()=>{HA.cmd('seekTo',[0,true]);setTimeout(()=>{const b=$('.yt-bg');if(b)b.classList.add('on')},400)},3600)}
 });
 ['pointerdown','keydown','touchend'].forEach(t=>document.addEventListener(t,e=>{
   if(HA.unlocked||!HA.f||(e.target.closest&&e.target.closest('.hvol')))return;
@@ -498,6 +505,7 @@ function heroEmbed(host,before){
   ytQuiet(f);
   f.allow='autoplay; encrypted-media';f.tabIndex=-1;f.title='showreel';d.appendChild(f);before.before(d);
   HA.f=f;$('#hvol').hidden=false;
+  {const im=$('#hcover img'),u=(REEL.v?['oardefault','hqdefault']:['maxresdefault','hqdefault']).map(n=>'https://i.ytimg.com/vi/'+REEL.yt+'/'+n+'.jpg');let k=0;im.onerror=()=>{k++;if(k<u.length)im.src=u[k];else im.remove()};im.onload=()=>{if(im.naturalWidth<=120)im.onerror()};im.src=u[0]}
   setTimeout(()=>d.classList.add('on'),8000);
   const fit=()=>{const s=Math.max(host.clientWidth/16,host.clientHeight/9);f.style.width=s*16+'px';f.style.height=s*9+'px'};
   fit();addEventListener('resize',fit);
@@ -563,8 +571,17 @@ $('#lb-x').onclick=closeLb;$('#lb-prev').onclick=()=>step(-1);$('#lb-next').oncl
 lb.addEventListener('click',e=>{if(!e.target.closest('.stage, button, a'))closeLb()});
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1)});
 function openReel(src){lastFocus=src;renderLb('reel');lb.classList.add('on');HA.ducked=true;HA.apply();document.body.style.overflow='hidden';$('#lb-x').focus()}
-$('#reel').addEventListener('click',e=>{if(e.target.closest('.hvol'))return;openReel(e.currentTarget)});
-$('#reel').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target===e.currentTarget){e.preventDefault();openReel(e.currentTarget)}});
+/* 제안 영상: 클릭하면 제자리에서 재생/일시정지.
+   유튜브를 실제로 멈추면 제목 등 UI가 뜨기 때문에, 멈춤은 화면을 덮고 소리를 끈 뒤 다시 누르면 멈췄던 지점으로 되돌려 이어 봅니다. */
+function toggleHero(){
+  if(!HA.f)return;
+  const r=$('#reel');
+  if(!HA.hpaused){HA.hpaused=true;HA.pt=HA.t||0;r.classList.add('paused')}
+  else{HA.hpaused=false;HA.cmd('seekTo',[HA.pt||0,true]);r.classList.remove('paused')}
+  HA.apply();
+}
+$('#reel').addEventListener('click',e=>{if(e.target.closest('.hvol'))return;toggleHero()});
+$('#reel').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target===e.currentTarget){e.preventDefault();toggleHero()}});
 
 /* copy */
 $$('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{
