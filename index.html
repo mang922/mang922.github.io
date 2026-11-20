@@ -176,6 +176,12 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .lb-roles:empty{display:none}
 .lb-roles i{font-style:normal;font-size:12px;font-weight:600;line-height:1;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff}
 .yshell{position:absolute;inset:0;z-index:4}
+.ywait{position:absolute;inset:0;background:#000;transition:opacity .35s ease}
+.ywait img{width:100%;height:100%;object-fit:cover;display:block}
+.ywait::after{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:yspin .8s linear infinite}
+.ywait.paused::after{animation:none;border:0;width:64px;height:64px;margin:-32px 0 0 -32px;background:rgba(0,0,0,.45) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M8 5v14l11-7z'/%3E%3C/svg%3E") center/26px no-repeat}
+.ywait.gone{opacity:0;pointer-events:none}
+@keyframes yspin{to{transform:rotate(360deg)}}
 .ycover{position:absolute;inset:0;width:100%;height:100%;background:transparent;cursor:pointer}
 .yctl{position:absolute;right:14px;bottom:14px;display:flex;gap:8px;opacity:0;transition:opacity .25s}
 .stage:hover .yctl,.yctl:focus-within{opacity:1}
@@ -414,21 +420,29 @@ function ytQuiet(f,lite){
 let ySh=null;
 addEventListener('message',e=>{
   if(!ySh||e.source!==ySh.f.contentWindow)return;
-  try{const d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d&&d.info&&typeof d.info.playerState==='number')ySh.playing=d.info.playerState===1||d.info.playerState===3}catch(err){}
+  try{const d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d&&d.info&&typeof d.info.playerState==='number'){const ps=d.info.playerState;ySh.seen=true;ySh.playing=ps===1||ps===3;if(ps===1)ySh.reveal();else if(ps===2)ySh.cover(true)}}catch(err){}
 });
-function ytShell(f){
+function ytShell(f,id,vert){
   const w=document.createElement('div');w.className='yshell';
-  w.innerHTML='<button class="ycover" aria-label="재생 또는 일시정지"></button>'
+  w.innerHTML='<div class="ywait"><img alt=""></div><button class="ycover" aria-label="재생 또는 일시정지"></button>'
    +'<span class="yflash" aria-hidden="true"></span>'
    +'<div class="yctl"><button class="ymute" aria-label="소리 끄기 또는 켜기">'
    +'<svg class="v-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>'
    +'<svg class="v-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg>'
    +'</button><button class="yfs" aria-label="전체 화면"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg></button></div>';
-  const st={f,playing:true,muted:false};ySh=st;
+  const st={f,playing:true,muted:false,seen:false};ySh=st;
+  /* 재생이 실제로 시작될 때까지 썸네일로 가려서, 유튜브의 로딩 화면·재생 버튼·DIM이 보이지 않게 함 */
+  const wt=w.querySelector('.ywait'),im=wt.querySelector('img');
+  const urls=(vert?['oardefault','hqdefault']:['maxresdefault','hqdefault']).map(n=>'https://i.ytimg.com/vi/'+id+'/'+n+'.jpg');let k=0;
+  im.onerror=()=>{k++;if(k<urls.length)im.src=urls[k];else im.remove()};im.onload=()=>{if(im.naturalWidth<=120)im.onerror()};im.src=urls[0];
+  let rt=0;
+  st.reveal=()=>{clearTimeout(rt);rt=setTimeout(()=>{wt.classList.add('gone');wt.classList.remove('paused')},450)};
+  st.cover=paused=>{clearTimeout(rt);wt.classList.remove('gone');wt.classList.toggle('paused',!!paused)};
+  setTimeout(()=>{if(!st.seen)wt.classList.add('gone')},7000);
   const cmd=fn=>{try{f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:[]}),'*')}catch(e){}};
   const fl=w.querySelector('.yflash');
   const flash=t=>{fl.textContent=t;fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')};
-  w.querySelector('.ycover').onclick=()=>{st.playing=!st.playing;cmd(st.playing?'playVideo':'pauseVideo');flash(st.playing?'▶':'❚❚')};
+  w.querySelector('.ycover').onclick=()=>{st.playing=!st.playing;cmd(st.playing?'playVideo':'pauseVideo');if(st.playing){if(!st.seen)st.reveal()}else st.cover(true);flash(st.playing?'▶':'❚❚')};
   w.querySelector('.ymute').onclick=e=>{st.muted=!st.muted;cmd(st.muted?'mute':'unMute');e.currentTarget.classList.toggle('off',st.muted)};
   w.querySelector('.yfs').onclick=()=>{
     try{if(document.fullscreenElement)document.exitFullscreen();else{const el=stage;(el.requestFullscreen||el.webkitRequestFullscreen).call(el)}}catch(e){}
@@ -494,7 +508,7 @@ function renderLb(i){
   stage.style.setProperty('--ar',w.v?'9/16':'16/9');stage.classList.toggle('v',!!w.v);stage.innerHTML='';
   const vid=reel&&REEL.src,emb=!vid&&ytOK&&!!w.yt;
   if(vid){const v=document.createElement('video');v.src=REEL.src;v.controls=true;v.autoplay=true;v.playsInline=true;stage.appendChild(v)}
-  else if(emb){const f=ytFrame(w.yt);stage.appendChild(f);stage.appendChild(ytShell(f))}
+  else if(emb){const f=ytFrame(w.yt);stage.appendChild(f);stage.appendChild(ytShell(f,w.yt,!!w.v))}
   else{
     stage.appendChild(tile(w,reel?0:i,false));
     const url=w.yt?'https://www.youtube.com/watch?v='+w.yt:'';
