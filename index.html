@@ -175,7 +175,7 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .lb-roles{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .lb-roles:empty{display:none}
 .lb-roles i{font-style:normal;font-size:12px;font-weight:600;line-height:1;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:#fff}
-.yshell{position:absolute;inset:0;z-index:4}
+.yshell{position:absolute;inset:0;z-index:4;pointer-events:none}
 .ywait{position:absolute;inset:0;background:#000;transition:opacity .35s ease}
 .ywait img{width:100%;height:100%;object-fit:cover;display:block}
 .ywait::after{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:yspin .8s linear infinite}
@@ -410,7 +410,7 @@ function ytImg(host,id,vert){
 /* 자막 끄기 + 가능한 가장 높은 화질 요청 (유튜브 플레이어에 명령 전송) */
 function ytQuiet(f,lite){
   const send=(func,args)=>{try{f.contentWindow.postMessage(JSON.stringify({event:'command',func,args:args||[]}),'*')}catch(e){}};
-  const run=()=>{send('unloadModule',['captions']);send('unloadModule',['cc']);send('setOption',['captions','track',{}]);if(!lite)send('setPlaybackQuality',['highres'])};
+  const run=()=>{send('unloadModule',['captions']);send('unloadModule',['cc']);send('setOption',['captions','track',{}]);if(!lite){send('setPlaybackQuality',['hd1080']);send('setPlaybackQualityRange',['hd1080','hd1080'])}};
   f.addEventListener('load',()=>{
     try{f.contentWindow.postMessage(JSON.stringify({event:'listening',id:'yt'}),'*')}catch(e){}
     [300,1000,2000,3500,6000].forEach(t=>setTimeout(run,t));
@@ -423,35 +423,22 @@ addEventListener('message',e=>{
   try{const d=typeof e.data==='string'?JSON.parse(e.data):e.data;if(d&&d.info&&typeof d.info.playerState==='number'){const ps=d.info.playerState;ySh.seen=true;ySh.playing=ps===1||ps===3;if(ps===1)ySh.reveal();else if(ps===2)ySh.cover(true)}}catch(err){}
 });
 function ytShell(f,id,vert){
+  /* 유튜브 기본 컨트롤(화질 설정 포함)은 그대로 쓰고, 재생 시작 전 로딩 화면만 썸네일로 가림 */
   const w=document.createElement('div');w.className='yshell';
-  w.innerHTML='<div class="ywait"><img alt=""></div><button class="ycover" aria-label="재생 또는 일시정지"></button>'
-   +'<span class="yflash" aria-hidden="true"></span>'
-   +'<div class="yctl"><button class="ymute" aria-label="소리 끄기 또는 켜기">'
-   +'<svg class="v-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>'
-   +'<svg class="v-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg>'
-   +'</button><button class="yfs" aria-label="전체 화면"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg></button></div>';
-  const st={f,playing:true,muted:false,seen:false};ySh=st;
-  /* 재생이 실제로 시작될 때까지 썸네일로 가려서, 유튜브의 로딩 화면·재생 버튼·DIM이 보이지 않게 함 */
+  w.innerHTML='<div class="ywait"><img alt=""></div>';
+  const st={f,playing:true,seen:false};ySh=st;
   const wt=w.querySelector('.ywait'),im=wt.querySelector('img');
   const urls=(vert?['oardefault','hqdefault']:['maxresdefault','hqdefault']).map(n=>'https://i.ytimg.com/vi/'+id+'/'+n+'.jpg');let k=0;
   im.onerror=()=>{k++;if(k<urls.length)im.src=urls[k];else im.remove()};im.onload=()=>{if(im.naturalWidth<=120)im.onerror()};im.src=urls[0];
   let rt=0;
-  st.reveal=()=>{clearTimeout(rt);rt=setTimeout(()=>{wt.classList.add('gone');wt.classList.remove('paused')},450)};
-  st.cover=paused=>{clearTimeout(rt);wt.classList.remove('gone');wt.classList.toggle('paused',!!paused)};
+  st.reveal=()=>{clearTimeout(rt);rt=setTimeout(()=>wt.classList.add('gone'),450)};
+  st.cover=()=>{};
   setTimeout(()=>{if(!st.seen)wt.classList.add('gone')},7000);
-  const cmd=fn=>{try{f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:[]}),'*')}catch(e){}};
-  const fl=w.querySelector('.yflash');
-  const flash=t=>{fl.textContent=t;fl.classList.remove('on');void fl.offsetWidth;fl.classList.add('on')};
-  w.querySelector('.ycover').onclick=()=>{st.playing=!st.playing;cmd(st.playing?'playVideo':'pauseVideo');if(st.playing){if(!st.seen)st.reveal()}else st.cover(true);flash(st.playing?'▶':'❚❚')};
-  w.querySelector('.ymute').onclick=e=>{st.muted=!st.muted;cmd(st.muted?'mute':'unMute');e.currentTarget.classList.toggle('off',st.muted)};
-  w.querySelector('.yfs').onclick=()=>{
-    try{if(document.fullscreenElement)document.exitFullscreen();else{const el=stage;(el.requestFullscreen||el.webkitRequestFullscreen).call(el)}}catch(e){}
-  };
   return w;
 }
 function ytFrame(id){
   const f=document.createElement('iframe');
-  f.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&controls=0&fs=0&rel=0&modestbranding=1&playsinline=1&cc_load_policy=0&iv_load_policy=3&enablejsapi=1&origin='+encodeURIComponent(location.origin);
+  f.src='https://www.youtube-nocookie.com/embed/'+id+'?autoplay=1&controls=1&rel=0&modestbranding=1&vq=hd1080&playsinline=1&cc_load_policy=0&iv_load_policy=3&enablejsapi=1&origin='+encodeURIComponent(location.origin);
   ytQuiet(f);
   f.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';f.allowFullscreen=true;f.title='영상 재생';
   f.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;z-index:3';
@@ -523,7 +510,8 @@ function renderLb(i){
 function step(d){if(!visible.length)return;cur=(cur+d+visible.length)%visible.length;renderLb(visible[cur])}
 function closeLb(){lb.classList.remove('on');ySh=null;if(document.fullscreenElement)try{document.exitFullscreen()}catch(e){};stage.innerHTML='';document.body.style.overflow='';lastFocus&&lastFocus.focus()}
 $('#lb-x').onclick=closeLb;$('#lb-prev').onclick=()=>step(-1);$('#lb-next').onclick=()=>step(1);
-lb.addEventListener('click',e=>{if(e.target===lb)closeLb()});
+/* 영상 화면과 버튼·링크 바깥을 누르면 닫기 */
+lb.addEventListener('click',e=>{if(!e.target.closest('.stage, button, a'))closeLb()});
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1)});
 $$('[data-reel]').forEach(b=>b.addEventListener('click',e=>{lastFocus=e.currentTarget;renderLb('reel');lb.classList.add('on');document.body.style.overflow='hidden';$('#lb-x').focus()}));
 
