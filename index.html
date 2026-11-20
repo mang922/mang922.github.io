@@ -57,7 +57,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .lnk:hover::after{transform:translateX(3px)}
 .reel-wrap{margin-top:clamp(40px,7vw,80px);padding-bottom:20px}
 .reel.v{aspect-ratio:9/16;width:min(100%,calc(min(78svh,760px)*9/16));height:auto;max-height:none}
-.reel{position:relative;margin:0 auto;aspect-ratio:16/9;max-height:84svh;width:100%;border-radius:32px;overflow:hidden;background:#05070a;color:var(--on-frame);transform:scale(.92);transform-origin:50% 0;will-change:transform;isolation:isolate}
+.reel{position:relative;margin:0 auto;aspect-ratio:16/9;max-height:84svh;width:100%;border-radius:32px;overflow:hidden;background:#05070a;color:var(--on-frame);transform:scale(var(--s,.92));transform-origin:50% 0;will-change:transform;isolation:isolate}
 .mesh{position:absolute;inset:-20%;z-index:-2;filter:blur(50px)}
 .mesh i{position:absolute;border-radius:50%;width:55%;aspect-ratio:1;animation:drift 18s ease-in-out infinite alternate}
 .mesh i:nth-child(1){background:#2a6df4;left:-5%;top:0}
@@ -360,7 +360,6 @@ WORKS.forEach((w,i)=>{
   el.addEventListener('click',()=>openLb(i));bento.appendChild(el);
 });
 /* 가로 영상(16:9)을 먼저, 세로 영상(쇼츠)은 그 뒤에 모아서 배치 (가로 영상 줄의 빈칸부터 채움) */
-$$('.tile.tall',bento).forEach(c=>bento.appendChild(c));
 
 /* filter tabs */
 const groups=[['all','전체'],['뷰티·SNS','뷰티·SNS'],['브랜드·광고','브랜드·광고'],['유튜브·인터뷰','유튜브·인터뷰']];
@@ -377,17 +376,23 @@ groups.forEach(([k,l])=>{
 let expanded=false;
 /* 세로 영상은 3개씩 묶어서 가로 영상 한 칸(16:9) 크기에 맞춰 배치 */
 const VPER=3;
+/* 순서: 가로 영상을 먼저(뷰티·SNS → 브랜드·광고 → 유튜브·인터뷰), 세로 영상은 항상 맨 끝에 같은 분류 순서로 */
+const CAT_ORDER={'뷰티':0,'SNS':0,'브랜드·광고':1,'유튜브·인터뷰':2};
+function sortKey(c){const w=WORKS[+c.dataset.i];return (w.v?1e8:0)+(CAT_ORDER[w.cat]??9)*1e6+(+c.dataset.i)}
 function unwrapV(){
   $$('.vgroup',bento).forEach(g=>{while(g.firstChild)bento.appendChild(g.firstChild);g.remove()});
-  $$('.tile.tall',bento).sort((a,b)=>a.dataset.i-b.dataset.i).forEach(c=>bento.appendChild(c));
+  $$('.tile',bento).sort((a,b)=>sortKey(a)-sortKey(b)).forEach(c=>bento.appendChild(c));
 }
 function layoutV(){
-  const vis=$$('.tile.tall',bento).filter(c=>!c.classList.contains('out')&&!c.classList.contains('cut'));
-  for(let k=0;k<vis.length;k+=VPER){
-    const g=document.createElement('div');g.className='vgroup';
-    vis.slice(k,k+VPER).forEach(c=>g.appendChild(c));
-    bento.appendChild(g);
-  }
+  const vis=$$('.tile',bento).filter(c=>!c.classList.contains('out')&&!c.classList.contains('cut'));
+  let run=[];
+  const flush=()=>{for(let k=0;k<run.length;k+=VPER){const ch=run.slice(k,k+VPER),g=document.createElement('div');g.className='vgroup';bento.insertBefore(g,ch[0]);ch.forEach(c=>g.appendChild(c))}run=[]};
+  vis.forEach(c=>{
+    if(c.classList.contains('tall')){
+      run.push(c);
+    }else flush();
+  });
+  flush();
 }
 function applyCut(){
   unwrapV();
@@ -408,9 +413,9 @@ function setFilter(f){
   const cards=$$('.tile',bento);cards.forEach(c=>c.classList.add('fade'));
   setTimeout(()=>{
     cards.forEach(c=>c.classList.toggle('out',!matchW(WORKS[+c.dataset.i],f)));
-    visible=cards.filter(c=>!c.classList.contains('out')).map(c=>+c.dataset.i);
-    $('#count').textContent=visible.length+'개의 작업';
     expanded=false;applyCut();
+    visible=$$('.tile',bento).filter(c=>!c.classList.contains('out')).map(c=>+c.dataset.i);
+    $('#count').textContent=visible.length+'개의 작업';
     $('#empty').style.display=visible.length?'none':'block';
     requestAnimationFrame(()=>cards.forEach(c=>c.classList.remove('fade')));
   },150);
@@ -633,7 +638,7 @@ if(REEL.role&&REEL.role.length)$('#reel-r').outerHTML=rolesHTML(REEL);
     nav.classList.toggle('sc',y>8);
     if(!reduce){
       const p=Math.min(y/(vh*.55),1);
-      reel.style.transform='scale('+(.92+.08*p)+')';
+      reel.style.setProperty('--s',(.92+.08*p).toFixed(4));
       reel.style.borderRadius=(32-8*p)+'px';
       const r=fill.getBoundingClientRect();
       const prog=Math.min(Math.max((vh*.9-r.top)/(vh*.55+r.height),0),1)*1.35;
