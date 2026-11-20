@@ -182,8 +182,11 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .rv{opacity:0;translate:0 36px}
 .rv.in{opacity:1;translate:0 0;transition:opacity .9s ease,translate 1s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
 .yimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
-.yt-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#000}
-.yt-bg iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:0;pointer-events:none}
+.yt-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.yt-bg iframe{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border:0;pointer-events:none;opacity:0;transition:opacity .6s ease}
+.yt-bg.on iframe{opacity:1}
+.reel{cursor:pointer}
+.reel:focus-visible{outline:3px solid var(--btn);outline-offset:4px}
 .lb-yt{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#2997ff}
 .lb-yt:hover{text-decoration:underline}
 .lb-roles{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
@@ -228,11 +231,10 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
     <h1>콘텐츠로<br><span class="grad">브랜드의 가치</span>를 전달합니다.</h1>
     <p>브랜드의 방향을 이해하고, 아이디어를 콘텐츠로,<br class="br"> 콘텐츠를 매력적인 브랜드 경험으로 만듭니다.</p>
     <div class="reel-wrap">
-      <div class="reel" id="reel">
+      <div class="reel" id="reel" role="button" tabindex="0" aria-label="제안 영상 크게 보기">
         <div class="mesh" aria-hidden="true"><i></i><i></i><i></i></div>
         <video id="bgv" muted loop playsinline preload="auto" aria-hidden="true" hidden></video>
         <div class="reel-ui"><b id="reel-t">제안 영상</b><span id="reel-s">SNS 숏폼</span><div id="reel-r"></div></div>
-        <button class="playbtn" data-reel aria-label="쇼릴 재생"><i>▶</i>재생</button>
         <div class="hvol" id="hvol" hidden><button id="hvol-b" class="off" aria-label="소리 켜기 또는 끄기"><svg class="v-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg><svg class="v-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="m23 9-6 6M17 9l6 6"/></svg></button><input id="hvol-r" type="range" min="0" max="100" value="70" aria-label="볼륨"></div>
       </div>
     </div>
@@ -470,6 +472,18 @@ const HA={f:null,vol:70,userMuted:false,unlocked:false,ducked:false,inView:true,
   audible(){return this.unlocked&&!this.userMuted&&this.vol>0},
   apply(){const on=this.audible()&&!this.ducked&&this.inView;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
 };
+/* 반복 재생: 영상을 다시 불러오지 않고 끝나기 직전에 처음으로 되감아, 깜빡임과 유튜브 UI가 다시 뜨지 않게 함 */
+addEventListener('message',e=>{
+  if(!HA.f||e.source!==HA.f.contentWindow)return;
+  let d;try{d=typeof e.data==='string'?JSON.parse(e.data):e.data}catch(err){return}
+  const i=d&&d.info;if(!i)return;
+  if(typeof i.duration==='number'&&i.duration>0)HA.dur=i.duration;
+  if(typeof i.currentTime==='number'&&HA.dur>1&&i.currentTime>=HA.dur-0.6&&!HA.seeking){
+    HA.seeking=true;HA.cmd('seekTo',[0,true]);setTimeout(()=>HA.seeking=false,1200);
+  }
+  if(i.playerState===0){HA.cmd('seekTo',[0,true]);HA.cmd('playVideo')}
+  if(i.playerState===1&&!HA.shown){HA.shown=true;setTimeout(()=>{const b=$('.yt-bg');if(b)b.classList.add('on')},700)}
+});
 ['pointerdown','keydown','touchend'].forEach(t=>document.addEventListener(t,e=>{
   if(HA.unlocked||!HA.f||(e.target.closest&&e.target.closest('.hvol')))return;
   HA.unlocked=true;HA.apply();
@@ -480,10 +494,11 @@ new IntersectionObserver(es=>{HA.inView=es[0].isIntersecting;HA.apply()},{thresh
 function heroEmbed(host,before){
   const d=document.createElement('div');d.className='yt-bg';d.setAttribute('aria-hidden','true');
   const f=document.createElement('iframe');
-  f.src='https://www.youtube-nocookie.com/embed/'+REEL.yt+'?autoplay=1&mute=1&loop=1&playlist='+REEL.yt+'&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3&cc_load_policy=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
+  f.src='https://www.youtube-nocookie.com/embed/'+REEL.yt+'?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&disablekb=1&iv_load_policy=3&cc_load_policy=0&enablejsapi=1&origin='+encodeURIComponent(location.origin);
   ytQuiet(f);
   f.allow='autoplay; encrypted-media';f.tabIndex=-1;f.title='showreel';d.appendChild(f);before.before(d);
   HA.f=f;$('#hvol').hidden=false;
+  setTimeout(()=>d.classList.add('on'),8000);
   const fit=()=>{const s=Math.max(host.clientWidth/16,host.clientHeight/9);f.style.width=s*16+'px';f.style.height=s*9+'px'};
   fit();addEventListener('resize',fit);
 }
@@ -547,7 +562,9 @@ $('#lb-x').onclick=closeLb;$('#lb-prev').onclick=()=>step(-1);$('#lb-next').oncl
 /* 영상 화면과 버튼·링크 바깥을 누르면 닫기 */
 lb.addEventListener('click',e=>{if(!e.target.closest('.stage, button, a'))closeLb()});
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowRight')step(1);if(e.key==='ArrowLeft')step(-1)});
-$$('[data-reel]').forEach(b=>b.addEventListener('click',e=>{lastFocus=e.currentTarget;renderLb('reel');lb.classList.add('on');HA.ducked=true;HA.apply();document.body.style.overflow='hidden';$('#lb-x').focus()}));
+function openReel(src){lastFocus=src;renderLb('reel');lb.classList.add('on');HA.ducked=true;HA.apply();document.body.style.overflow='hidden';$('#lb-x').focus()}
+$('#reel').addEventListener('click',e=>{if(e.target.closest('.hvol'))return;openReel(e.currentTarget)});
+$('#reel').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target===e.currentTarget){e.preventDefault();openReel(e.currentTarget)}});
 
 /* copy */
 $$('[data-copy]').forEach(b=>b.addEventListener('click',async()=>{
