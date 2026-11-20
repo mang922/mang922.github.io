@@ -192,7 +192,7 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .reel.paused .hcover{opacity:1}
 .reel.local .hcover{background:rgba(0,0,0,.28)}
 .reel.local .hcover img{display:none}
-.reel.local .reel-ui{display:none}
+.reel .reel-ui{display:none}
 .reel.local.cover-on .hcover{opacity:1}
 .reel:focus-visible{outline:3px solid var(--btn);outline-offset:4px}
 .lb-yt{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#2997ff}
@@ -611,7 +611,7 @@ if(REEL.role&&REEL.role.length)$('#reel-r').outerHTML=rolesHTML(REEL);
   const r=$('#reel');
   v.addEventListener('error',()=>{v.hidden=true;$('.mesh').hidden=false;$('#hvol').hidden=true;HA.f=null;HA.local=false;HA.idle=false;r.classList.remove('local','cover-on')},{once:true});
   v.src=REEL.src;v.hidden=false;$('.mesh').hidden=true;v.loop=true;v.muted=true;
-  HA.local=true;HA.idle=true;HA.v=v;HA.f={contentWindow:null};r.classList.add('local','cover-on');$('#hvol').hidden=false;
+  HA.local=true;HA.idle=false;HA.v=v;HA.f={contentWindow:null};r.classList.add('local');$('#hvol').hidden=false;
   HA.cmd=function(fn,a){
     if(fn==='setVolume')v.volume=Math.max(0,Math.min(1,a[0]/100));
     else if(fn==='unMute'){v.muted=false;if(!this.hpaused)v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
