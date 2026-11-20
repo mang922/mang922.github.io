@@ -192,6 +192,8 @@ footer{max-width:1180px;margin:0 auto;padding-block:28px 44px;border-top:1px sol
 .reel.paused .hcover{opacity:1}
 .reel.local .hcover{background:rgba(0,0,0,.28)}
 .reel.local .hcover img{display:none}
+.reel.local .reel-ui{display:none}
+.reel.local.cover-on .hcover{opacity:1}
 .reel:focus-visible{outline:3px solid var(--btn);outline-offset:4px}
 .lb-yt{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#2997ff}
 .lb-yt:hover{text-decoration:underline}
@@ -477,7 +479,7 @@ function ytFrame(id){
 const HA={f:null,vol:70,userMuted:false,unlocked:false,ducked:false,inView:true,
   cmd(fn,args){if(!this.f)return;try{this.f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args||[]}),'*')}catch(e){}},
   audible(){return this.unlocked&&!this.userMuted&&this.vol>0},
-  apply(){const on=this.audible()&&!this.ducked&&this.inView&&!this.hpaused;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
+  apply(){const on=this.audible()&&!this.ducked&&this.inView&&!this.hpaused&&!this.idle;if(on){this.cmd('setVolume',[this.vol]);this.cmd('unMute')}else this.cmd('mute');const b=$('#hvol-b');if(b)b.classList.toggle('off',!this.audible())}
 };
 /* 반복 재생: 영상을 다시 불러오지 않고 끝나기 직전에 처음으로 되감아, 깜빡임과 유튜브 UI가 다시 뜨지 않게 함 */
 addEventListener('message',e=>{
@@ -497,8 +499,8 @@ addEventListener('message',e=>{
   if(HA.unlocked||!HA.f||(e.target.closest&&e.target.closest('.hvol')))return;
   HA.unlocked=true;HA.apply();
 },true));
-$('#hvol-b').addEventListener('click',()=>{const was=HA.audible();HA.unlocked=true;HA.userMuted=was;if(!was&&HA.vol===0){HA.vol=50;$('#hvol-r').value=50}HA.apply()});
-$('#hvol-r').addEventListener('input',e=>{HA.vol=+e.target.value;HA.unlocked=true;HA.userMuted=HA.vol===0;HA.apply()});
+$('#hvol-b').addEventListener('click',()=>{const was=HA.audible()&&!HA.idle;HA.idle=false;HA.unlocked=true;HA.userMuted=was;if(!was&&HA.vol===0){HA.vol=50;$('#hvol-r').value=50}HA.apply()});
+$('#hvol-r').addEventListener('input',e=>{HA.idle=false;HA.vol=+e.target.value;HA.unlocked=true;HA.userMuted=HA.vol===0;HA.apply()});
 new IntersectionObserver(es=>{HA.inView=es[0].isIntersecting;HA.apply()},{threshold:0}).observe($('#reel'));
 function heroEmbed(host,before){
   const d=document.createElement('div');d.className='yt-bg';d.setAttribute('aria-hidden','true');
@@ -578,7 +580,10 @@ function openReel(src){lastFocus=src;renderLb('reel');lb.classList.add('on');HA.
 function toggleHero(){
   if(!HA.f)return;
   const r=$('#reel');
-  if(HA.local){const v=HA.v;if(v.paused){HA.hpaused=false;v.play().catch(()=>{});r.classList.remove('paused')}else{HA.hpaused=true;v.pause();r.classList.add('paused')}HA.apply();return}
+  if(HA.local){const v=HA.v;
+    if(r.classList.contains('cover-on')){HA.idle=false;HA.hpaused=false;HA.unlocked=true;r.classList.remove('cover-on');if(v.paused)v.play().catch(()=>{})}
+    else{HA.hpaused=true;v.pause();r.classList.add('cover-on')}
+    HA.apply();return}
   if(!HA.hpaused){HA.hpaused=true;HA.pt=HA.t||0;r.classList.add('paused')}
   else{HA.hpaused=false;HA.cmd('seekTo',[HA.pt||0,true]);r.classList.remove('paused')}
   HA.apply();
@@ -604,9 +609,9 @@ if(REEL.role&&REEL.role.length)$('#reel-r').outerHTML=rolesHTML(REEL);
 (function(){
   const v=$('#bgv');if(!REEL.src)return;
   const r=$('#reel');
-  v.addEventListener('error',()=>{v.hidden=true;$('.mesh').hidden=false;$('#hvol').hidden=true;HA.f=null;HA.local=false;r.classList.remove('local')},{once:true});
+  v.addEventListener('error',()=>{v.hidden=true;$('.mesh').hidden=false;$('#hvol').hidden=true;HA.f=null;HA.local=false;HA.idle=false;r.classList.remove('local','cover-on')},{once:true});
   v.src=REEL.src;v.hidden=false;$('.mesh').hidden=true;v.loop=true;v.muted=true;
-  HA.local=true;HA.v=v;HA.f={contentWindow:null};r.classList.add('local');$('#hvol').hidden=false;
+  HA.local=true;HA.idle=true;HA.v=v;HA.f={contentWindow:null};r.classList.add('local','cover-on');$('#hvol').hidden=false;
   HA.cmd=function(fn,a){
     if(fn==='setVolume')v.volume=Math.max(0,Math.min(1,a[0]/100));
     else if(fn==='unMute'){v.muted=false;if(!this.hpaused)v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})}
