@@ -510,10 +510,7 @@ addEventListener('message',e=>{
   /* 처음 재생 직후 몇 초간 뜨는 유튜브 제목이 사라질 때까지 숨겨 두었다가, 처음으로 되감고 보여줌 */
   if(i.playerState===1&&!HA.shown){HA.shown=true;setTimeout(()=>{HA.cmd('seekTo',[0,true]);setTimeout(()=>{const b=$('.yt-bg');if(b)b.classList.add('on')},400)},3600)}
 });
-['pointerdown','keydown','touchend'].forEach(t=>document.addEventListener(t,e=>{
-  if(HA.unlocked||!HA.f||(e.target.closest&&e.target.closest('.hvol')))return;
-  HA.unlocked=true;HA.apply();
-},true));
+/* 소리는 볼륨 버튼(또는 볼륨 바)을 눌렀을 때만 켜짐 */
 $('#hvol-b').addEventListener('click',()=>{const was=HA.audible()&&!HA.idle;HA.idle=false;HA.unlocked=true;HA.userMuted=was;if(!was&&HA.vol===0){HA.vol=50;$('#hvol-r').value=50}HA.apply()});
 $('#hvol-r').addEventListener('input',e=>{HA.idle=false;HA.vol=+e.target.value;HA.unlocked=true;HA.userMuted=HA.vol===0;HA.apply()});
 new IntersectionObserver(es=>{HA.inView=es[0].isIntersecting;HA.apply()},{threshold:0}).observe($('#reel'));
@@ -596,7 +593,7 @@ function toggleHero(){
   if(!HA.f)return;
   const r=$('#reel');
   if(HA.local){const v=HA.v;
-    if(r.classList.contains('cover-on')){HA.idle=false;HA.hpaused=false;HA.unlocked=true;r.classList.remove('cover-on');if(v.paused)v.play().catch(()=>{})}
+    if(r.classList.contains('cover-on')){HA.idle=false;HA.hpaused=false;r.classList.remove('cover-on');if(v.paused)v.play().catch(()=>{})}
     else{HA.hpaused=true;v.pause();r.classList.add('cover-on')}
     HA.apply();return}
   if(!HA.hpaused){HA.hpaused=true;HA.pt=HA.t||0;r.classList.add('paused')}
